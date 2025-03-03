@@ -1,10 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Pizza from "./Pizza";
 
 export default function Order() {
   //   const pizzaType = "pepperoni";
   const [pizzaType, setPizzaType] = useState("ital_veggie");
   const [pizzaSize, setPizzaSize] = useState("M");
+  const [pizzas, setPizzas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  let price, selectedPizza;
+
+  const intl = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+  
+
+  if (!loading) {
+    selectedPizza = pizzas.find((pizza) => pizzaType === pizza.id);
+    price = intl.format(
+        selectedPizza.sizes ? selectedPizza.sizes[pizzaSize] : ""
+      );
+  }
+
+  useEffect(() => {
+    fetchPizzaTypes();
+  }, []);
+
+  async function fetchPizzaTypes() {
+    const pizzaData = await fetch("api/pizzas");
+    const pizzaDataJson = await pizzaData.json();
+    console.log("Fetched pizzas:", pizzaDataJson);
+    setPizzas(pizzaDataJson);
+    setLoading(false);
+  }
+
   return (
     <div className="order">
       <h2>Create Order</h2>
@@ -12,10 +41,16 @@ export default function Order() {
         <div>
           <div>
             <label htmlFor="pizza-type">Pizza Type</label>
-            <select name="pizza-type" value={pizzaType} onChange={(e) => setPizzaType(e.target.value)}>
-              <option value="ital_veggie">The Italian Veggie Pizza</option>
-              <option value="veggie_veg">The Veggie Veg Pizza</option>
-              <option value="ckn_pesto">The Chicken Pesto Pizza</option>
+            <select
+              name="pizza-type"
+              value={pizzaType}
+              onChange={(e) => setPizzaType(e.target.value)}
+            >
+              {pizzas.map((pizza) => (
+                <option key={pizza.id} value={pizza.id}>
+                  {pizza.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -34,7 +69,7 @@ export default function Order() {
               </span>
               <span>
                 <input
-                onChange={(e) => setPizzaSize(e.target.value)}
+                  onChange={(e) => setPizzaSize(e.target.value)}
                   checked={pizzaSize === "M"}
                   type="radio"
                   name="pizza-size"
@@ -45,7 +80,7 @@ export default function Order() {
               </span>
               <span>
                 <input
-                onChange={(e) => setPizzaSize(e.target.value)}
+                  onChange={(e) => setPizzaSize(e.target.value)}
                   checked={pizzaSize === "L"}
                   type="radio"
                   name="pizza-size"
@@ -57,14 +92,22 @@ export default function Order() {
             </div>
           </div>
           <button type="submit">Add to Cart</button>
-        </div>
-        <div className="order-pizza">
-          <Pizza
-            name="veggie_veg"
-            description="Veggies, Mozzarella Cheese"
-            image="/public/pizzas/veggie_veg.webp"
-          />
-          <p>$13.37</p>
+
+          <div className="order-pizza">
+          {!loading ? (
+            <>
+              <Pizza
+              name={selectedPizza.name}
+              description={selectedPizza.description}
+              image={selectedPizza.image}
+            />
+            <p>{price}</p>
+            </>
+          ) : (
+            <p>Loading pizza...</p>
+          )}
+            
+          </div>
         </div>
       </form>
     </div>
